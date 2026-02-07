@@ -23,8 +23,8 @@ namespace Nano {
             // Motors
             int get_motor_position_counter(int motor);
             void clear_motor_position_counter(int motor);
-            int set_motor_power(int motor, int percent);
-            int move_at_velocity(int motor, int velocity);
+            void set_motor_power(int motor, int percent);
+            void move_at_velocity(int motor, int velocity);
             void move_to_position(int motor, int speed, int goal_ticks);
             void move_relative_position(int motor, int speed, int delta_ticks);
             bool is_motor_done(int motor);
@@ -47,8 +47,8 @@ namespace Nano {
             // Analog and digital
             int get_analog(int port);
             int get_digital(int port);
-            int set_digital(int port, int value);
-            int change_digital_port_mode(int port, bool is_input);
+            void set_digital(int port, int value);
+            void change_digital_port_mode(int port, bool is_input);
 
             // Gyroscope
             int get_gyro_x();
