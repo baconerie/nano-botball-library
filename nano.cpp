@@ -48,12 +48,12 @@ typedef std::variant<
     int,
     std::tuple<int, int>, 
     std::tuple<int, bool>,
+    std::tuple<int, int, int>,
     std::tuple<int, short, short, short, short, short, short>,
 > MessageContent;
-std::queue<std::tuple<MessageType, MessageContent>> request_message_queue;
+std::queue<std::tuple<unsigned int, MessageType, MessageContent>> request_message_queue;
 unsigned int next_message_id = 0;
-std::queue<MessageContent> response_message_queue;
-unsigned int top_most_request_message_id;
+std::queue<std::tuple<unsigned int, MessageContent>> response_message_queue;
 
 
 // delete this
@@ -106,7 +106,6 @@ void worker_thread_function() {
         Nano::MutexLock lock(message_mutex);
 
         if (request_message_queue.empty()) {
-            Nano::wait_for_milliseconds(3);
             continue;
         }
 
@@ -262,8 +261,7 @@ void worker_thread_function() {
             }
 
             case MessageType::get_pid_gains: {
-                std::tuple<int> content_tuple = std::get<std::tuple<int>>(request_content);
-                int motor = std::get<0>(content_tuple);
+                int motor = std::get<int>(request_content);
                 short p, i, d, pd, id, dd;
                 get_pid_gains(motor, &p, &i, &d, &pd, &id, &dd);
                 std::tuple<int, short, short, short, short, short, short> response_content_tuple = std::make_tuple(motor, p, i, d, pd, id, dd);
@@ -367,6 +365,7 @@ void Nano::BaseRobot::wait_for_light(int light_sensor_pin) {
     on_light_value_average = (float)on_light_value_sum / on_light_value_count;
 
     std::cout << "\n\nOn light value average: " << on_light_value_average << "\n\n" << std::endl;
+    Nano::wait_for_milliseconds(1000);
 
     // Calibrate off light value
     while (!b_button()) {
@@ -417,6 +416,113 @@ void Nano::BaseRobot::wait_for_light(int light_sensor_pin) {
     std::cout << "Starting! Last light value: " << light_value << " and threshold " << threshold << std::endl;
 }
 
-void Nano::BaseRobot::wait_until_motor_done(int motor) {
+int Nano::BaseRobot::get_motor_position_counter(int motor) {
+    return std::get<int>(send_and_wait_for_response(MessageType::get_motor_position_counter, motor, 3));
+}
 
+void Nano::BaseRobot::clear_motor_position_counter(int motor) {
+    send_message(MessageType::clear_motor_position_counter, motor);
+}
+
+void Nano::BaseRobot::set_motor_power(int motor, int power) {
+    send_message(MessageType::set_motor_power, std::make_tuple(motor, power));
+}
+
+void Nano::BaseRobot::move_at_velocity(int motor, int velocity) {
+    send_message(MessageType::move_at_velocity, std::make_tuple(motor, velocity));
+}
+
+void Nano::BaseRobot::move_to_position(int motor, int position, int goal_ticks) {
+    send_message(MessageType::move_to_position, std::make_tuple(motor, position, goal_ticks));
+}
+
+void Nano::BaseRobot::move_relative_position(int motor, int speed, int delta_ticks) {
+    send_message(MessageType::move_relative_position, std::make_tuple(motor, speed, delta_ticks));
+}
+
+bool Nano::BaseRobot::is_motor_done(int motor) {
+    return std::get<1>(std::get<std::tuple<int, bool>>(send_and_wait_for_response(MessageType::is_motor_done, motor, 3)));
+}
+
+void Nano::BaseRobot::wait_until_motor_done(int motor) {
+    while (!this->is_motor_done(motor)) {
+        Nano::wait_for_milliseconds(10);
+    }
+}
+
+void Nano::BaseRobot::freeze(int motor) {
+    send_message(MessageType::freeze, motor);
+}
+
+void Nano::BaseRobot::freeze_all_motors() {
+    this->freeze(0);
+    this->freeze(1);
+    this->freeze(2);
+    this->freeze(3);
+}
+
+bool Nano::BaseRobot::is_servo_enabled(int port) {
+    return std::get<1>(std::get<std::tuple<int, bool>>(send_and_wait_for_response(MessageType::is_servo_enabled, port, 3)));
+}
+
+void Nano::BaseRobot::set_servo_enabled(int port, bool enabled) {
+    send_message(MessageType::set_servo_enabled, std::make_tuple(port, enabled));
+}
+
+void Nano::BaseRobot::set_all_servos_enabled(bool enabled) {
+    send_message(MessageType::set_all_servos_enabled, enabled);
+}
+
+void Nano::BaseRobot::set_servo_position(int port, int position) {
+    send_message(MessageType::set_servo_position, std::make_tuple(port, position));
+}
+
+int Nano::BaseRobot::get_analog(int port) {
+    return std::get<1>(std::get<std::tuple<int, int>>(send_and_wait_for_response(MessageType::get_analog, port, 3)));
+}
+
+int Nano::BaseRobot::get_digital(int port) {
+    return std::get<1>(std::get<std::tuple<int, int>>(send_and_wait_for_response(MessageType::get_digital, port, 3)));
+}
+
+void Nano::BaseRobot::set_digital(int port, int value) {
+    send_message(MessageType::set_digital, std::make_tuple(port, value));
+}
+
+void Nano::BaseRobot::change_digital_port_mode(int port, bool is_input) {
+    send_message(MessageType::change_digital_port_mode, std::make_tuple(port, is_input));
+}
+
+int Nano::BaseRobot::get_gyro_x() {
+    return std::get<int>(send_and_wait_for_response(MessageType::get_gyro_x_raw, 0, 3));
+}
+
+int Nano::BaseRobot::get_gyro_y() {
+    return std::get<int>(send_and_wait_for_response(MessageType::get_gyro_y_raw, 0, 3));
+}
+
+int Nano::BaseRobot::get_gyro_z() {
+    return std::get<int>(send_and_wait_for_response(MessageType::get_gyro_z_raw, 0, 3));
+}
+
+void Nano::BaseRobot::set_pid_gains(int motor, short p, short i, short d, short pd, short id, short dd) {
+    send_message(MessageType::set_pid_gains, std::make_tuple(motor, p, i, d, pd, id, dd));
+}
+
+void Nano::BaseRobot::get_pid_gains(int motor, short& p, short& i, short& d, short& pd, short& id, short& dd) {
+    std::tuple<int, short, short, short, short, short, short> response = std::get<std::tuple<int, short, short, short, short, short, short>>(send_and_wait_for_response(MessageType::get_pid_gains, motor, 3));
+    p = std::get<1>(response);
+    i = std::get<2>(response);
+    d = std::get<3>(response);
+    pd = std::get<4>(response);
+    id = std::get<5>(response);
+    dd = std::get<6>(response);
+}
+
+int Nano::BaseRobot::getpwm(int motor) {
+    return std::get<1>(std::get<std::tuple<int, int>>(send_and_wait_for_response(MessageType::getpwm, motor, 3)));
+}
+
+void Nano::BaseRobot::setpwm(int motor, int pwm) {
+    send_message(MessageType::setpwm, std::make_tuple(motor, pwm));
 }
