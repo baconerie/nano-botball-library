@@ -8,13 +8,17 @@ programming to understand this
 docs will help you the rest of the way
 */
 
+
 namespace Nano {
     void start_nano();
+
+    void wait_for_milliseconds(int milliseconds);
     
     class BaseRobot {
         public:
             BaseRobot();
-            ~BaseRobot();
+
+            void wait_for_light(int light_sensor_pin);
 
             // Motors
             int get_motor_position_counter(int motor);
@@ -24,7 +28,7 @@ namespace Nano {
             void move_to_position(int motor, int speed, int goal_ticks);
             void move_relative_position(int motor, int speed, int delta_ticks);
             bool is_motor_done(int motor);
-            bool wait_until_motor_done(int motor); // NOTE: do not directly wrap for this one; main thread CANNOT BLOCK!
+            void wait_until_motor_done(int motor); // NOTE: do not directly wrap for this one; main thread CANNOT BLOCK!
             void freeze(int motor);
 
             // Servos. Get servo position is not added because it is unnecessary
@@ -57,7 +61,7 @@ namespace Nano {
         public:
             Mutex();
         private:
-            mutex m;
+            mutex _m;
     };
 
     class MutexLock {
@@ -66,8 +70,8 @@ namespace Nano {
             ~MutexLock();
             void unlock();
         private:
-            bool has_already_unlocked;
-            Mutex& m;
+            bool _has_already_unlocked;
+            Mutex& _m;
     };
 
     template<typename Func>
@@ -78,7 +82,7 @@ namespace Nano {
             wait_for_thread();
             stop();
         private:
-            thread t;
+            thread _t;
     };
 
     namespace Testing {
