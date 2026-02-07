@@ -30,6 +30,7 @@ namespace Nano {
             bool is_motor_done(int motor);
             void wait_until_motor_done(int motor); // NOTE: do not directly wrap for this one; main thread CANNOT BLOCK!
             void freeze(int motor);
+            void freeze_all_motors();
 
             // Servos. Get servo position is not added because it is unnecessary
             // and may cause confusion.
