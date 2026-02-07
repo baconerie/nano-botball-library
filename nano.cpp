@@ -102,27 +102,32 @@ int b_button 	( 		) 	;
 
 void worker_thread_function() {
     while (true) {
+        Nano::wait_for_milliseconds(2);
+        Nano::MutexLock lock(message_mutex);
+
         if (request_message_queue.empty()) {
             Nano::wait_for_milliseconds(3);
             continue;
         }
 
-        std::tuple<MessageType, MessageContent> next_request = request_message_queue.front();
+        std::tuple<unsigned int, MessageType, MessageContent> next_request = request_message_queue.front();
         request_message_queue.pop();
 
-        MessageType request_type = std::get<0>(next_request);
-        MessageContent request_content = std::get<1>(next_request);
+        unsigned int request_message_id = std::get<0>(next_request);
+        MessageType request_type = std::get<1>(next_request);
+        MessageContent request_content = std::get<2>(next_request);
 
         switch (request_type) {
             case MessageType::get_motor_position_counter: {
                 int motor = std::get<int>(request_content);
                 int position = get_motor_position_counter(motor);
-                response_message_queue.push(std::make_tuple(motor, position));
+                std::tuple<int, int> response_content_tuple = std::make_tuple(motor, position);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
             case MessageType::clear_motor_position_counter: {
-                int motor = std::get<int>(std::get<1>(next_request));
+                int motor = std::get<int>(request_content);
                 clear_motor_position_counter(motor);
                 break;
             }
@@ -164,7 +169,8 @@ void worker_thread_function() {
             case MessageType::is_motor_done: {
                 int motor = std::get<int>(request_content);
                 bool is_done = (bool)get_motor_done(motor);
-                response_message_queue.push(std::make_tuple(motor, is_done));
+                std::tuple<int, bool> response_content_tuple = std::make_tuple(motor, is_done);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
             
@@ -177,7 +183,8 @@ void worker_thread_function() {
             case MessageType::is_servo_enabled: {
                 int servo = std::get<int>(request_content);
                 bool is_enabled = (bool)get_servo_enabled(servo);
-                response_message_queue.push(std::make_tuple(servo, is_enabled));
+                std::tuple<int, bool> response_content_tuple = std::make_tuple(servo, is_enabled);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
@@ -210,14 +217,16 @@ void worker_thread_function() {
             case MessageType::get_analog: {
                 int port = std::get<int>(request_content);
                 int analog_value = analog(port);
-                response_message_queue.push(std::make_tuple(port, analog_value));
+                std::tuple<int, int> response_content_tuple = std::make_tuple(port, analog_value);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
             case MessageType::get_digital: {
                 int port = std::get<int>(request_content);
                 int digital_value = get_digital_value(port);
-                response_message_queue.push(std::make_tuple(port, digital_value));
+                std::tuple<int, int> response_content_tuple = std::make_tuple(port, digital_value);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
@@ -238,17 +247,17 @@ void worker_thread_function() {
             }
 
             case MessageType::get_gyro_x_raw: {
-                response_message_queue.push((int)gyro_x());
+                response_message_queue.push(std::make_tuple(request_message_id, (int)gyro_x()));
                 break;
             }
 
             case MessageType::get_gyro_y_raw: {
-                response_message_queue.push((int)gyro_y());
+                response_message_queue.push(std::make_tuple(request_message_id, (int)gyro_y()));
                 break;
             }
 
             case MessageType::get_gyro_z_raw: {
-                response_message_queue.push((int)gyro_z());
+                response_message_queue.push(std::make_tuple(request_message_id, (int)gyro_z()));
                 break;
             }
 
@@ -257,7 +266,8 @@ void worker_thread_function() {
                 int motor = std::get<0>(content_tuple);
                 short p, i, d, pd, id, dd;
                 get_pid_gains(motor, &p, &i, &d, &pd, &id, &dd);
-                response_message_queue.push(std::make_tuple(motor, p, i, d, pd, id, dd));
+                std::tuple<int, short, short, short, short, short, short> response_content_tuple = std::make_tuple(motor, p, i, d, pd, id, dd);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
@@ -277,7 +287,8 @@ void worker_thread_function() {
             case MessageType::getpwm: {
                 int motor = std::get<int>(request_content);
                 int pwm = getpwm(motor);
-                response_message_queue.push(std::make_tuple(motor, pwm));
+                std::tuple<int, int> response_content_tuple = std::make_tuple(motor, pwm);
+                response_message_queue.push(std::make_tuple(request_message_id, response_content_tuple));
                 break;
             }
 
@@ -289,8 +300,34 @@ void worker_thread_function() {
                 break;
             }
         }
+    }
+}
 
-        Nano::wait_for_milliseconds(3);
+int send_message(MessageType message_type, MessageContent request_content) {
+    Nano::MutexLock lock(message_mutex);
+    unsigned int message_id = next_message_id;
+    request_message_queue.push(std::make_tuple(message_id, message_type, request_content));
+    next_message_id++;
+    lock.unlock();
+    return message_id;
+}
+
+MessageContent send_and_wait_for_response(MessageType message_type, MessageContent request_content, int wait_time_ms) {
+    int message_id = send_message(message_type, request_content);
+
+    while (true) {
+        Nano::wait_for_milliseconds(wait_time_ms);
+        Nano::MutexLock lock(message_mutex);
+
+        if (response_message_queue.empty()) {
+            continue;
+        }
+
+        if (message_id == std::get<0>(response_message_queue.front())) {
+            MessageContent response = std::get<1>(response_message_queue.front());
+            response_message_queue.pop();
+            return response;
+        }
     }
 }
 
