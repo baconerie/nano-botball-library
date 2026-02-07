@@ -39,12 +39,6 @@ namespace Nano {
             void set_all_servos_enabled(bool enabled);
             void set_servo_position(int port, int position);
 
-            // Advanced functions that most teams will likely not use.
-            int set_pid_gains(int motor, short p, short i, short d, short pd, short id, short dd);
-            int get_pid_gains(int motor, short& p, short& i, short& d, short& pd, short& id, short& dd);
-            int setpwm(int motor, int pwm);
-            int getpwm(int motor);
-
             // Analog and digital
             int get_analog(int port);
             int get_digital(int port);
@@ -54,7 +48,13 @@ namespace Nano {
             // Gyroscope
             int get_gyro_x();
             int get_gyro_y();
-            int get_gyro_z();   
+            int get_gyro_z();
+
+            // Advanced functions that most teams will likely not use.
+            void get_pid_gains(int motor, short& p, short& i, short& d, short& pd, short& id, short& dd);
+            void set_pid_gains(int motor, short p, short i, short d, short pd, short id, short dd);
+            int getpwm(int motor); 
+            void setpwm(int motor, int pwm);
     };
     
     /// Wraps an object, allowing thread safe read and write.
