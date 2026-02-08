@@ -43,6 +43,10 @@ namespace Nano {
             void set_all_servos_enabled(bool enabled);
             void set_servo_position(int port, int position);
 
+            void async_slowly_move_servo(int port, int target_position, float total_seconds);
+            void slowly_move_servo_and_wait(int port, int target_position, float total_seconds);
+            void wait_until_servo_done(int port);
+
             // Analog and digital
             int get_analog(int port);
             int get_digital(int port);
