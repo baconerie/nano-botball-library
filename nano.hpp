@@ -79,14 +79,14 @@ namespace Nano {
     class Thread {
         public:
             Thread(Func function, bool start_automatically=true);
-            start();
-            wait_for_thread();
-            stop();
+            void start();
+            void wait_for_thread();
+            void stop();
         private:
             thread _t;
     };
 
     namespace Testing {
         // single funnctions which have an entire tesing program built in them.
-    }
+    };
 }

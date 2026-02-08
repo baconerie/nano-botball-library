@@ -526,3 +526,52 @@ int Nano::BaseRobot::getpwm(int motor) {
 void Nano::BaseRobot::setpwm(int motor, int pwm) {
     send_message(MessageType::setpwm, std::make_tuple(motor, pwm));
 }
+
+// Mutex
+
+Nano::Mutex::Mutex() : _m(mutex_create()) {}
+
+Nano::Mutex::~Mutex() {
+    mutex_destroy(this->_m);
+}
+
+Nano::MutexLock::MutexLock(Nano::Mutex& mutex) : _m(mutex) {
+    mutex_lock(this->_m);
+}
+
+void Nano::MutexLock::unlock() {
+    mutex_unlock(this->_m);
+}
+
+Nano::MutexLock::~MutexLock() {
+    this->unlock();
+}
+
+// Thread
+template<typename Func>
+Nano::Thread<Func>::Thread(Func thread_function, bool start_automatically) 
+    : _t(thread_create(thread_function)) {
+    if (start_automatically) {
+        this->start();
+    }
+}
+
+template<typename Func>
+Nano::Thread<Func>::~Thread() {
+    this->stop();
+}
+
+template<typename Func>
+void Nano::Thread<Func>::start() {
+    thread_start(this->_t);
+}
+
+template<typename Func>
+void Nano::Thread<Func>::wait_for_thread() {
+    thread_wait(this->_t);
+}
+
+template<typename Func>
+void Nano::Thread<Func>::stop() {
+    thread_destroy(this->_t);
+}
