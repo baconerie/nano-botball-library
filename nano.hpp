@@ -8,6 +8,8 @@ programming to understand this
 docs will help you the rest of the way
 */
 
+#include <kipr/libkipr.h>
+
 
 namespace Nano {
     void start_nano();
