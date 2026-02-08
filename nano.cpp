@@ -286,6 +286,7 @@ MessageContent send_and_wait_for_response(MessageType message_type, MessageConte
 
 void Nano::start_nano() {
     if (!has_already_started_worker_thread) {
+        std::cout << "Starting Nano!" << std::endl;
         worker_thread.start();
         has_already_started_worker_thread = true;
     }
