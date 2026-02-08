@@ -11,6 +11,7 @@ docs will help you the rest of the way
 #pragma once
 
 #include <kipr/libkipr.h>
+#include <queue>
 
 
 namespace Nano {
@@ -18,6 +19,12 @@ namespace Nano {
 
     void wait_for_milliseconds(int milliseconds);
     
+    enum WOMBAT_AXIS {
+        X_AXIS = 0,
+        Y_AXIS = 1,
+        Z_AXIS = 2,
+    };
+
     class BaseRobot {
         public:
             BaseRobot();
@@ -49,16 +56,108 @@ namespace Nano {
             void set_digital(int port, int value);
             void change_digital_port_mode(int port, bool is_input);
 
-            // Gyroscope
-            int get_gyro_x();
-            int get_gyro_y();
-            int get_gyro_z();
+            // IMU
+            void calibrate_gyroscope(
+                int x_axis_offset_degrees, 
+                int y_axis_offset_degrees,
+                int z_axis_offset_degrees,
+                int num_samples=500
+            );
+            void calibrate_accelerometer(
+                int x_axis_offset_degrees,
+                int y_axis_offset_degrees,
+                int z_axis_offset_degrees,
+                int num_samples=500
+            );
+
+            void set_gyroscope_axes(WOMBAT_AXIS x_axis, WOMBAT_AXIS y_axis, WOMBAT_AXIS z_axis);
+            void set_accelerometer_axes(WOMBAT_AXIS x_axis, WOMBAT_AXIS y_axis, WOMBAT_AXIS z_axis);
+            void set_gyroscope_conversion(double gyro_x_conversion, double gyro_y_conversion, double gyro_z_conversion);
+            void set_accelerometer_conversion(double accel_x_conversion, double accel_y_conversion, double accel_z_conversion);
+
+            double get_angular_velocity_x();
+            double get_angular_velocity_y();
+            double get_angular_velocity_z();
+
+            double get_rotation_x();
+            double get_rotation_y();
+            double get_rotation_z();
+
+            double get_acceleration_x();
+            double get_acceleration_y();
+            double get_acceleration_z();
+
+            double get_velocity_x();
+            double get_velocity_y();
+            double get_velocity_z();
+
+            double get_position_x();
+            double get_position_y();
+            double get_position_z();
+
+            void TEST_PROGRAM_get_gyroscope_conversion();
 
             // Advanced functions that most teams will likely not use.
             void get_pid_gains(int motor, short& p, short& i, short& d, short& pd, short& id, short& dd);
             void set_pid_gains(int motor, short p, short i, short d, short pd, short id, short dd);
             int getpwm(int motor); 
             void setpwm(int motor, int pwm);
+
+        private:
+            int _imu_last_update_time;
+
+            int _smoothing_buffer_size;
+            
+            std::queue<int> _gyro_x_smoothing_buffer;
+            float _gyro_x_smoothing_buffer_sum;
+            std::queue<int> _gyro_y_smoothing_buffer;
+            float _gyro_y_smoothing_buffer_sum;
+            std::queue<int> _gyro_z_smoothing_buffer;
+            float _gyro_z_smoothing_buffer_sum;
+
+            double _gyro_x_conversion;
+            double _gyro_y_conversion;
+            double _gyro_z_conversion;
+
+            int _gyro_x_bias;
+            int _gyro_y_bias;
+            int _gyro_z_bias;
+
+            int _gyro_x_threshold;
+            int _gyro_y_threshold;
+            int _gyro_z_threshold;
+
+            double _rotation_x;
+            double _rotation_y;
+            double _rotation_z;
+
+            std::queue<int> _accel_x_smoothing_buffer;
+            float _accel_x_smoothing_buffer_sum;
+            std::queue<int> _accel_y_smoothing_buffer;
+            float _accel_y_smoothing_buffer_sum;
+            std::queue<int> _accel_z_smoothing_buffer;
+            float _accel_z_smoothing_buffer_sum;
+
+            double _accel_x_conversion;
+            double _accel_y_conversion;
+            double _accel_z_conversion;
+
+            double _accel_x_bias;
+            double _accel_y_bias;
+            double _accel_z_bias;
+
+            double _accel_x_threshold;
+            double _accel_y_threshold;
+            double _accel_z_threshold;
+
+            double _velocity_x;
+            double _velocity_y;
+            double _velocity_z;
+
+            double _position_x;
+            double _position_y;
+            double _position_z;
+
     };
     
     /// Wraps an object, allowing thread safe read and write.
