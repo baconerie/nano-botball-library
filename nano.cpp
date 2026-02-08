@@ -55,51 +55,6 @@ std::queue<std::tuple<unsigned int, MessageType, MessageContent>> request_messag
 unsigned int next_message_id = 0;
 std::queue<std::tuple<unsigned int, MessageContent>> response_message_queue;
 
-
-// delete this
-int get_motor_position_counter(int motor);
-void clear_motor_position_counter(int motor);
-void set_motor_power(int motor, int power);
-void move_at_velocity(int, int);
-void move_to_position(int, int, int);
-void move_relative_position(int, int, int);
-int get_motor_done(int);
-void freeze(int motor);
-bool get_servo_enabled(int port);
-void set_servo_enabled(int port, int enabled);
-void enable_servos();
-void disable_servos();
-void set_servo_position(int port, int position);
-int analog(int port);
-void set_digital_value(int port, int value);
-int get_digital_value(int port);
-void set_digital_value(int port, int value);
-void set_digital_output(int port, int out);
-signed short gyro_x();
-signed short gyro_y();
-signed short gyro_z();
-void set_pid_gains 	( 	int  	motor,
-		short  	p,
-		short  	i,
-		short  	d,
-		short  	pd,
-		short  	id,
-		short  	dd 
-	) 		;
-void get_pid_gains 	( 	int  	motor,
-		short *  	p,
-		short *  	i,
-		short *  	d,
-		short *  	pd,
-		short *  	id,
-		short *  	dd 
-	) 	;
-
-int getpwm(int motor);
-int setpwm(int motor, int pwm);
-void msleep(int milliseconds);
-int b_button 	( 		) 	;
-
 void worker_thread_function() {
     while (true) {
         Nano::wait_for_milliseconds(2);
